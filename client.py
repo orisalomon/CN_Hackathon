@@ -21,15 +21,15 @@ client_tcp.connect((socket.gethostname(),5000))
 # receive data from the server and decoding to get the string.
 # print (s.recv(1024).decode())
 
-message = input(" -> ")  # take input
+insert_name = client_tcp.recv(1024).decode()  # receive response
+print(insert_name)
 
-while message.lower().strip() != 'bye':
-    client_tcp.send(message.encode())  # send message
-    data = client_tcp.recv(1024).decode()  # receive response
+client_tcp.send(input().encode())  # send message
 
-    print('Received from server: ' + data)  # show in terminal
+question = client_tcp.recv(1024).decode()  # receive response
+print(question)  # show in terminal
 
-    message = input(" -> ")  # again take input
+client_tcp.send(input().encode())  # send message
 
 client_tcp.close()  # close the connection
 
