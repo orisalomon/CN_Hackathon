@@ -3,6 +3,9 @@
 import socket	
 import stoppableThread
 import config
+import sys
+import io
+import subprocess
 
 
 class Client:
@@ -46,9 +49,10 @@ class Client:
                 client_ans = input().encode()
                 conn.send(client_ans)  # send client answer
             except:
+                # sys.stdin = io.StringIO(b'none')
                 pass
-        print("send name")
-        conn.send(input().encode())  # send group name
+
+        print("message sent")
 
         question = conn.recv(self.bufferSize).decode()  # receive response
         print(question)  # show in terminal
@@ -64,7 +68,7 @@ class Client:
 
 
         serverResult = conn.recv(self.bufferSize).decode()  # receive response
-        t.stop()
+        # t.stop()
         print(serverResult)
 
 
@@ -78,4 +82,5 @@ while(True):
     # print out client message
     print("Server disconnected, listening for offer requests...")
     conn.close()  # close the connection
+    
 

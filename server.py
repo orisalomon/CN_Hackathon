@@ -83,8 +83,8 @@ class Server:
                 pass
 
         
-        self.client1[0].settimeout(10.0)
-        self.client2[0].settimeout(10.0)
+        # self.client1[0].settimeout(10.0)
+        # self.client2[0].settimeout(10.0)
 
         t0 = stoppableThread.StoppableThread(target=threadAnswer,args=(0,self.client1[0]))
         t1 = stoppableThread.StoppableThread(target=threadAnswer,args=(1,self.client2[0]))
@@ -111,9 +111,9 @@ class Server:
 
         ### TODO there is limit of time for waiting for group names?
         # receive groups names
+
         name1 = self.client1[0].recv(self.server_buffer_size).decode()
         name2 = self.client2[0].recv(self.server_buffer_size).decode()
-
 
         number1 = random.randint(1,5)
         number2 = random.randint(1,4)
@@ -179,10 +179,11 @@ while(True):
     # close clients TCP connections
     # server.client1[0].close()
     # server.client2[0].close()
-    
+
     # remove groups from server
     server.client1 = None
     server.client2 = None
+
     # print out server message
     print(f"Game over, sending out offer requests...")
 
