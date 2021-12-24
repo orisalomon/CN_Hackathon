@@ -21,7 +21,9 @@ class Server:
         ### players ##
         self.client1 = None
         self.client2 = None
-         
+        # print out server message
+        print(f"Server started, listening on IP address {self.ip_address}")
+
     def establishTCPServer(self):       
         ########################## TCP ################################
 
@@ -51,9 +53,6 @@ class Server:
 
         ########################## UDP ################################
         
-        # print out server message
-        print(f"Server started, listening on IP address {self.ip_address}")
-
         # Create a UDP socket object
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) 
         # set broadcast mode
@@ -184,3 +183,6 @@ while(True):
     # remove groups from server
     server.client1 = None
     server.client2 = None
+    # print out server message
+    print(f"Game over, sending out offer requests...")
+
