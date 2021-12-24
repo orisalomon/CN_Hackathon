@@ -75,29 +75,32 @@ class Server:
         ans = []
 
         def threadAnswer(player_id,conn):
-            ## TODO: what happends if only one player answer
-            
-            ans.append((conn.recv(self.server_buffer_size).decode(),player_id))       
+            try:
+                clientAns = None
+                clientAns = conn.recv(self.server_buffer_size).decode()
+                if(clientAns is not None):
+                    ans.append((clientAns,player_id))       
+            except:
+                pass
+
+        
+        self.client1[0].settimeout(10.0)
+        self.client2[0].settimeout(10.0)
 
         t0 = stoppableThread.StoppableThread(target=threadAnswer,args=(0,self.client1[0]))
         t1 = stoppableThread.StoppableThread(target=threadAnswer,args=(1,self.client2[0]))
         # run threads
         t0.start()
         t1.start()
-        print("threads running")
         finish_time = time.time() + 10
         while(time.time() < finish_time):
             if(len(ans) > 0):
                 try:
-                    if t0.is_alive:
-                        t0.stop()
-
-                    if t1.is_alive:
-                        t1.stop()
+                    t0.stop()
+                    t1.stop()
                 except:
                     print("Error found!")
 
-                print(ans)
                 return ans[0]
         
         # time finished for current game
@@ -111,12 +114,7 @@ class Server:
         # receive groups names
         name1 = self.client1[0].recv(self.server_buffer_size).decode()
         name2 = self.client2[0].recv(self.server_buffer_size).decode()
-        print(f"name1: {name1}")
-        print(f"name2: {name2}")
-        # # if not name1 or name2:
-        # if not name1:
-        #     # if data is not received break
-        #     return
+
 
         number1 = random.randint(1,5)
         number2 = random.randint(1,4)
@@ -180,8 +178,8 @@ while(True):
     server.gameMode() # handle game after found players
 
     # close clients TCP connections
-    server.client1[0].close()
-    server.client2[0].close()
+    # server.client1[0].close()
+    # server.client2[0].close()
     
     # remove groups from server
     server.client1 = None

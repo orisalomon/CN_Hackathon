@@ -1,6 +1,14 @@
 
 # Import socket module
-import socket			
+import socket	
+import stoppableThread
+
+def handleInput(conn):
+    try:
+        client_ans = input().encode()
+        conn.send(client_ans)  # send client answer
+    except:
+        pass
 
 # print out client message
 print("Client started, listening for offer requests...")
@@ -27,7 +35,22 @@ client_tcp.send(input().encode())  # send group name
 question = client_tcp.recv(1024).decode()  # receive response
 print(question)  # show in terminal
 
-client_tcp.send(input().encode())  # send message
+
+# client_tcp.settimeout(10.0)
+t = stoppableThread.StoppableThread(target=handleInput,args=(client_tcp,))
+try:
+    s = t.start()
+
+except:
+    print("no answer from client!")
+
+
+serverResult = client_tcp.recv(1024).decode()  # receive response
+t.stop()
+print(serverResult)
 
 client_tcp.close()  # close the connection
+
+
+
 
