@@ -4,107 +4,185 @@ import config
 import time              
 import threading
 import random
+import struct
+import stoppableThread
+
+class Server:
+
+    def __init__(self):
+        
+        ## Server Details ##
+        self.server_port = config.SERVER_PORT
+        self.server_buffer_size = config.SERVER_BUFFER_SIZE
+        self.host_name = socket.gethostname()
+        self.ip_address = socket.gethostbyname(self.host_name)
+        self.udp_port = config.UDP_BROADCAST_PORT
+        
+        ### players ##
+        self.client1 = None
+        self.client2 = None
+         
+    def establishTCPServer(self):       
+        ########################## TCP ################################
+
+        server_socket = socket.socket()  # get instance
+        # look closely. The bind() function takes tuple as argument
+        server_socket.bind((self.host_name, self.server_port))  # bind host address and port together
+
+        # configure how many client the server can listen simultaneously
+        server_socket.listen(2)
+
+        def thread_function(accept):
+            while not (self.client1 and self.client2): 
+                conn, address = accept()
+
+                if(self.client1 is  None and self.client2 is None):
+                    self.client1 = (conn,address)
+
+                elif (self.client1 is not None and self.client2 is None):
+                    self.client2 = (conn,address)
 
 
-def gameMode(conn1,conn2=None):
-########### GAME MODE ################
-
-    # ask for the group names
-    print("trying to send message")
-    conn1.send("Server Message: Please send your team's name. ".encode())  # send welcoming message to the client1
-    # conn2.send("Server Message: Please send your team's name. ".encode())  # send welcoming message to the client2
-
-    # receive data stream. it won't accept data packet greater than 1024 bytes
-    name1 = conn1.recv(1024).decode()
-    # name2 = conn2.recv(1024).decode()
-    # if not name1 or name2:
-    if not name1:
-        # if data is not received break
-        return
-
-    number1 = random.randint(1,5)
-    number2 = random.randint(1,4)
-    operator = ["+","-"][random.randint(0,1)]
-    
-    question = f"{number2 if number1<number2 else number1}{operator}{number1 if number1<number2 else number2}"
-
-    message = \
-    f"""
-    Welcome to Quick Maths.
-    Player 1: {name1}
-    Player 2: NULL
-    ==
-    Please answer the following question as fast as you can:
-    How much is {question}?
-    """
-    conn1.send(message.encode()) # ask question 
-
-    # print("from connected user: " + str(data))
-    # data = input(' -> ')
-    # conn1.send(data.encode())  # send data to the client
-    # conn2.send(data.encode())  # send data to the client
-    
-    answer = conn1.recv(1024).decode()
-    print(f"recieved from client: {answer}")
-
-    conn1.close()  # close the connection
-# conn2.close()  # close the connection
+        t = threading.Thread(target=thread_function,args=(server_socket.accept,))  # accept new connection
+        t.start()
 
 
-def waitingForClient():
-    have_2_clients = False
-    def thread_function(func, data, to_send):
-        while not have_2_clients: 
-            func(data,to_send)
+    def udpBroadcast(self):
+
+        ########################## UDP ################################
+        
+        # print out server message
+        print(f"Server started, listening on IP address {self.ip_address}")
+
+        # Create a UDP socket object
+        udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) 
+        # set broadcast mode
+        udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+        ## CREATE UDP PACKET ##
+        udp_packet = struct.pack('LBH', 0xabcddcba, 0x2, self.server_port)
+
+        while not (server.client1 and server.client2): 
+            udp_socket.sendto(udp_packet,('<broadcast>', self.udp_port))
             time.sleep(1)
         
-    ########################## UDP ################################
-    # Create a UDP socket object
-    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP Socket   
-    # set broadcast mode
-    udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        ## close udp socket after found 2 players
+        udp_socket.close()
+            
 
-    host = socket.gethostbyname(socket.gethostname())
-    # print out server message
-    print(f"Server started, listening on IP address {host}")
+    def handleAnswer(self):
+        
+        ans = []
 
+        def threadAnswer(player_id,conn):
+            ## TODO: what happends if only one player answer
+            
+            ans.append((conn.recv(self.server_buffer_size).decode(),player_id))       
+
+        t0 = stoppableThread.StoppableThread(target=threadAnswer,args=(0,self.client1[0]))
+        t1 = stoppableThread.StoppableThread(target=threadAnswer,args=(1,self.client2[0]))
+        # run threads
+        t0.start()
+        t1.start()
+        print("threads running")
+        finish_time = time.time() + 10
+        while(time.time() < finish_time):
+            if(len(ans) > 0):
+                try:
+                    if t0.is_alive:
+                        t0.stop()
+
+                    if t1.is_alive:
+                        t1.stop()
+                except:
+                    print("Error found!")
+
+                print(ans)
+                return ans[0]
+        
+        # time finished for current game
+        return
+
+
+    def gameMode(self):
+    ########### GAME MODE ################
+
+        ### TODO there is limit of time for waiting for group names?
+        # receive groups names
+        name1 = self.client1[0].recv(self.server_buffer_size).decode()
+        name2 = self.client2[0].recv(self.server_buffer_size).decode()
+        print(f"name1: {name1}")
+        print(f"name2: {name2}")
+        # # if not name1 or name2:
+        # if not name1:
+        #     # if data is not received break
+        #     return
+
+        number1 = random.randint(1,5)
+        number2 = random.randint(1,4)
+        operator = ["+","-"][random.randint(0,1)]
+        if(operator == "+"):
+            result = number1 + number2
+        else:
+            result = abs(number1 - number2)
+        
+        question = f"{number2 if number1<number2 else number1}{operator}{number1 if number1<number2 else number2}"
+
+        message = \
+        f"""
+        Welcome to Quick Maths.
+        Player 1: {name1}
+        Player 2: {name2}
+        ==
+        Please answer the following question as fast as you can:
+        How much is {question}?
+        """
+        self.client1[0].send(message.encode()) # ask question 
+        self.client2[0].send(message.encode()) # ask question 
+
+        # print("from connected user: " + str(data))
+        # data = input(' -> ')
+        # conn1.send(data.encode())  # send data to the client
+        # conn2.send(data.encode())  # send data to the client
+        
+        answer = self.handleAnswer()
+        drawMessage = f"""Game over!
+        The correct answer was {result}!
+
+        Game finished with a DRAW!
+        """ 
+        if(not answer): 
+            # send draw message
+            self.client1[0].send(drawMessage.encode())
+            self.client2[0].send(drawMessage.encode()) 
+            return
+            
+
+        groupWinName = [name1,name2][answer[1]] if int(answer[0])==result else [name1,name2][1-answer[1]]
+
+        winMessage = f"""Game over!
+            The correct answer was {result}!
+
+            Congratulations to the winner: {groupWinName}
+            """ 
+        # send finish message to groups
+        self.client1[0].send(winMessage.encode())
+        self.client2[0].send(winMessage.encode()) 
+
+        
+
+
+
+server = Server() ## init server and TCP connection
+while(True):
+    server.establishTCPServer()
+    server.udpBroadcast() # send udp broadcast messages for the clients to join the game
+    server.gameMode() # handle game after found players
+
+    # close clients TCP connections
+    server.client1[0].close()
+    server.client2[0].close()
     
-    ########### BROADCAST #################
-
-    string_to_send = b"connect to my server at IP: " + socket.gethostbyname(socket.gethostname()).encode() + b"Port: 5000" 
-    # udp_socket.sendto(b"connect to my server at IP: " + socket.gethostbyname(socket.gethostname()).encode() + b"Port: 5000" , ('<broadcast>', 13117))
-
-    udp_thread = threading.Thread(target=thread_function, args=(udp_socket.sendto,string_to_send,('<broadcast>', 13117),))
-    udp_thread.start()
-
-             
-    ########################## TCP ################################
-
-    # get the hostname
-    host = socket.gethostname()
-    port = 5000  # initiate port no above 1024
-
-    server_socket = socket.socket()  # get instance
-    # look closely. The bind() function takes tuple as argument
-    server_socket.bind((host, port))  # bind host address and port together
-
-    # configure how many client the server can listen simultaneously
-    server_socket.listen(2)
-    clients_lst = []
-    conn1, address1 = server_socket.accept()  # accept new connection
-    # conn2, address2 = server_socket.accept()  # accept new connection
-
-    # stop boradcasting UDP
-    have_2_clients = True
-
-    clients_lst.append((conn1,address1))
-    # clients_lst.append((conn2,address2))
-    print("Connection from: " + str(address1))
-    # print("Connection from: " + str(address2))
-
-    return conn1,None
-
-
-conn1,conn2 = waitingForClient()
-time.sleep(3)
-gameMode(conn1,conn2)
+    # remove groups from server
+    server.client1 = None
+    server.client2 = None
