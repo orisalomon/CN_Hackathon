@@ -6,6 +6,8 @@ import threading
 import random
 import struct
 import stoppableThread
+from scapy.all import get_if_addr
+
 
 class Server:
 
@@ -14,6 +16,7 @@ class Server:
         ## Server Details ##
         self.server_port = config.SERVER_PORT
         self.server_buffer_size = config.SERVER_BUFFER_SIZE
+        # self.host_name = get_if_addr('eth1')
         self.host_name = socket.gethostname()
         self.ip_address = socket.gethostbyname(self.host_name)
         self.udp_port = config.UDP_BROADCAST_PORT

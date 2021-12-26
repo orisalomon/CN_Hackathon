@@ -5,6 +5,7 @@ import stoppableThread
 import config
 import sys
 import select
+from scapy.all import get_if_addr
 
 
 
@@ -39,6 +40,7 @@ class Client:
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # TCP 
         # client_tcp = self.tcp_socket
         try:
+            # self.tcp_socket.connect((get_if_addr('eth1'),self.serverPort))
             self.tcp_socket.connect((socket.gethostname(),self.serverPort))
         except:
             return None
