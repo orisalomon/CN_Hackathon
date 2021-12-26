@@ -136,11 +136,6 @@ class Server:
         """
         self.client1[0].send(message.encode()) # ask question 
         self.client2[0].send(message.encode()) # ask question 
-
-        # print("from connected user: " + str(data))
-        # data = input(' -> ')
-        # conn1.send(data.encode())  # send data to the client
-        # conn2.send(data.encode())  # send data to the client
         
         answer = self.handleAnswer()
         drawMessage = f"""Game over!
