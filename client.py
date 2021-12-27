@@ -75,18 +75,15 @@ class Client:
 
         ## answer handling ##
 
-        readables, writeables, exceptions = select.select([self.tcp_socket], [], [],10)
+        readables, writeables, exceptions = select.select([self.tcp_socket,sys.stdin], [], [],10)
         while(True):
             for sock in readables:
-                print("Error 1")
                 if sock == self.tcp_socket:
-                    print("Error 2")
                     serverResult = conn.recv(self.bufferSize).decode()  # receive response
                     print(serverResult)
                     break
             
                 elif sock == sys.stdin:
-                    print("Error 3")
                     message = sys.stdin.readline() 
                     conn.send(message.encode())
                     break
