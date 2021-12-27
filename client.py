@@ -6,7 +6,7 @@ import config
 import sys
 import select
 from scapy.all import get_if_addr
-import getch
+# import getch
 
 
 
@@ -15,7 +15,7 @@ class Client:
     
     def __init__(self):
         self.udpPort = config.UDP_BROADCAST_PORT
-        self.serverPort = config.SERVER_PORT
+        self.clientPort = config.CLIENT_PORT
         self.serverAddr = None
         self.bufferSize = config.CLIENT_BUFFER_SIZE
         self.tcp_socket = None
@@ -43,7 +43,7 @@ class Client:
         # client_tcp = self.tcp_socket
         try:
             # self.tcp_socket.connect((get_if_addr('eth1'),self.serverPort))
-            self.tcp_socket.connect((socket.gethostname(),self.serverPort))
+            self.tcp_socket.connect((socket.gethostname(),self.clientPort))
         except:
             return None
         # self.tcp_socket = client_tcp
@@ -77,17 +77,21 @@ class Client:
 
         ## answer handling ##
 
-        readables, writeables, exceptions = select.select([self.tcp_socket,sys.stdin], [], [],10)
-        while(True):
+        readables, writeables, exceptions = select.select([self.tcp_socket], [], [])
+        is_finished = False
+        while(not is_finished):
             for sock in readables:
                 if sock == self.tcp_socket:
                     serverResult = conn.recv(self.bufferSize).decode()  # receive response
                     print(serverResult)
+                    is_finished = True
                     break
             
                 elif sock == sys.stdin:
-                    message = getch.getch()
+                    # message = getch.getch()
+                    message = input()
                     conn.send(message.encode())
+                    is_finished = True
                     break
         # t.stop()
         

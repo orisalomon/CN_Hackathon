@@ -152,8 +152,13 @@ class Server:
             self.client2[0].send(drawMessage.encode()) 
             return
             
+        try:
+            answer_0 = int(answer[0])
+        
+        except:
+            answer_0 = -1
 
-        groupWinName = [name1,name2][answer[1]] if int(answer[0])==result else [name1,name2][1-answer[1]]
+        groupWinName = [name1,name2][answer[1]] if answer_0==result else [name1,name2][1-answer[1]]
 
         winMessage = f"""Game over!
             The correct answer was {result}!
