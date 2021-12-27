@@ -6,6 +6,8 @@ import config
 import sys
 import select
 from scapy.all import get_if_addr
+import getch
+
 
 
 
@@ -84,7 +86,7 @@ class Client:
                     break
             
                 elif sock == sys.stdin:
-                    message = sys.stdin.readline() 
+                    message = getch.getch()
                     conn.send(message.encode())
                     break
         # t.stop()
