@@ -19,6 +19,7 @@ class Client:
         self.serverAddr = None
         self.bufferSize = config.CLIENT_BUFFER_SIZE
         self.tcp_socket = None
+        self.name = config.CLIENT_NAME
 
         # print out client message
         print("Client started, listening for offer requests...")
@@ -28,7 +29,7 @@ class Client:
         client_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
         # client_udp.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         client_udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        client_udp.bind(("", self.udpPort))
+        client_udp.bind(('', self.udpPort))
 
         while True:
         ## connect to server
@@ -61,7 +62,7 @@ class Client:
 
         
 
-        conn.send(input().encode()) # send group name
+        conn.send(self.name.encode()) # send group name
 
         question = conn.recv(self.bufferSize).decode()  # receive response
         print(question)  # show in terminal
@@ -77,7 +78,7 @@ class Client:
 
         ## answer handling ##
 
-        readables, writeables, exceptions = select.select([self.tcp_socket], [], [])
+        readables, writeables, exceptions = select.select([self.tcp_socket,sys.stdin], [], [])
         is_finished = False
         while(not is_finished):
             for sock in readables:

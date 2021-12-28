@@ -27,15 +27,16 @@ class Server:
         # print out server message
         print(f"Server started, listening on IP address {self.ip_address}")
 
+        self.server_socket = socket.socket()  # get instance
+
+        self.server_socket.bind(('', self.server_port))  # bind host address and port together
+
+        # configure how many client the server can listen simultaneously
+        self.server_socket.listen(2)
+
     def establishTCPServer(self):       
         ########################## TCP ################################
 
-        server_socket = socket.socket()  # get instance
-        # look closely. The bind() function takes tuple as argument
-        server_socket.bind((self.host_name, self.server_port))  # bind host address and port together
-
-        # configure how many client the server can listen simultaneously
-        server_socket.listen(2)
 
         def thread_function(accept):
             while not (self.client1 and self.client2): 
@@ -48,7 +49,7 @@ class Server:
                     self.client2 = (conn,address)
 
 
-        t = threading.Thread(target=thread_function,args=(server_socket.accept,))  # accept new connection
+        t = threading.Thread(target=thread_function,args=(self.server_socket.accept,))  # accept new connection
         t.start()
 
 
@@ -62,7 +63,7 @@ class Server:
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
         ## CREATE UDP PACKET ##
-        udp_packet = struct.pack('LBH', 0xabcddcba, 0x2, self.server_port)
+        udp_packet = struct.pack('IBH', 0xabcddcba, 0x2, self.server_port)
 
         while not (server.client1 and server.client2): 
             udp_socket.sendto(udp_packet,('<broadcast>', self.udp_port))
@@ -175,18 +176,20 @@ class Server:
 
 server = Server() ## init server and TCP connection
 while(True):
-    server.establishTCPServer()
-    server.udpBroadcast() # send udp broadcast messages for the clients to join the game
-    server.gameMode() # handle game after found players
+    try:
+        server.establishTCPServer()
+        server.udpBroadcast() # send udp broadcast messages for the clients to join the game
+        server.gameMode() # handle game after found players
 
-    # close clients TCP connections
-    # server.client1[0].close()
-    # server.client2[0].close()
+        # close clients TCP connections
+        # server.client1[0].close()
+        # server.client2[0].close()
 
-    # remove groups from server
-    server.client1 = None
-    server.client2 = None
+        # remove groups from server
+        server.client1 = None
+        server.client2 = None
 
-    # print out server message
-    print(f"Game over, sending out offer requests...")
-
+        # print out server message
+        print(f"Game over, sending out offer requests...")
+    except:
+        continue
