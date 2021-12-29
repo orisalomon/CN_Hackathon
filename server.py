@@ -8,7 +8,6 @@ import struct
 import stoppableThread
 from scapy.all import get_if_addr
 import select
-# import bcolors
 from colorama import Fore, Back, Style
 
 
@@ -19,7 +18,7 @@ class Server:
         ## Server Details ##
         self.server_port = config.SERVER_PORT
         self.server_buffer_size = config.SERVER_BUFFER_SIZE
-        self.host_name = get_if_addr('eth1')
+        self.host_name = get_if_addr('eth2')
         # self.host_name = socket.gethostname()
         # self.ip_address = socket.gethostbyname(self.host_name)
         self.udp_port = config.UDP_BROADCAST_PORT
@@ -27,13 +26,8 @@ class Server:
         ### players ##
         self.client1 = None
         self.client2 = None
-        # print out server message
-        # print(f"Server started, listening on IP address {self.host_name}")
+
         print(f"{Fore.MAGENTA}{Style.BRIGHT}Server started, listening on IP address {self.host_name}")
-        # print(Style.RESET_ALL)
-
-        # print(f"{bcolors.OKBLUE}Server started, listening on IP address {self.host_name}{bcolors.ENDC}")
-
 
         self.server_socket = socket.socket()  # get instance
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -47,14 +41,10 @@ class Server:
     def establishTCPServer(self):       
         ########################## TCP ################################
 
-
         def thread_function(socket):
             while not (self.client1 and self.client2): 
                 conn, address = socket.accept()
-                print(address)
-                # if address[0] != "172.1.0.39":
-                #     continue
-                
+
                 if(self.client1 is  None and self.client2 is None):
                     self.client1 = (conn,address)
 
@@ -77,7 +67,7 @@ class Server:
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
         ## CREATE UDP PACKET ##
-        udp_packet = struct.pack('>IbH', 0xabcddcba, 0x2, self.server_port)
+        udp_packet = struct.pack('>IBH', 0xabcddcba, 0x2, self.server_port)
 
         while not (server.client1 and server.client2): 
             # udp_socket.sendto(udp_packet,('<broadcast>', self.udp_port))
@@ -102,10 +92,6 @@ class Server:
                     ans.append((clientAns,player_id))       
             except Exception as e:
                 print(e)
-
-        
-        # self.client1[0].settimeout(10.0)
-        # self.client2[0].settimeout(10.0)
 
         t0 = stoppableThread.StoppableThread(target=threadAnswer,args=(0,self.client1[0]))
         t1 = stoppableThread.StoppableThread(target=threadAnswer,args=(1,self.client2[0]))
@@ -141,8 +127,7 @@ class Server:
             result = abs(number1 - number2)
         
         question = f"{number2 if number1<number2 else number1}{operator}{number1 if number1<number2 else number2}"
-# {Fore.MAGENTA}{Style.BRIGHT}
-# print(Style.RESET_ALL)
+
         message = \
         f"""
         Welcome to Quick Maths.
@@ -192,10 +177,6 @@ while(True):
         server.establishTCPServer()
         server.udpBroadcast() # send udp broadcast messages for the clients to join the game
         server.gameMode() # handle game after found players
-
-        # close clients TCP connections
-        # server.client1[0].close()
-        # server.client2[0].close()
 
         # remove groups from server
         server.client1 = None
